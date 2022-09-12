@@ -1,0 +1,75 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+trigger:
+- none
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: Variable Group
+
+stages:
+  - stage: Build
+    jobs:
+      - job: 'b1'
+        steps:
+        - script: echo Hello, world!
+          displayName: 'Run a one-line script'
+
+  - stage: Test
+    jobs:
+      - job: 't1'
+        steps:
+        - script: echo Hello, world!
+          displayName: 'Run a one-line script'
+        # - task: SonarCloudPrepare@1
+        #   inputs:
+        #       SonarCloud: 'SonarCloud-ServieConnection'
+        #       organization: 'venkataprasadsirigi'
+        #       scannerMode: 'Other'
+        #       extraProperties: |
+        #         # Additional properties that will be passed to the scanner,
+        #         # Put one key=value per line, example:
+        #         # sonar.exclusions=**/*.bin
+        #         sonar.projectKey=venkataprasadsirigi_DevOpsTestProject
+        #         sonar.projectName=DevOpsTestProject
+        - task: Maven@3
+          inputs:
+            mavenPomFile: 'pom.xml'
+            publishJUnitResults: true
+            testResultsFiles: '**/surefire-reports/TEST-*.xml'
+            javaHomeOption: 'JDKVersion'
+            mavenVersionOption: 'Default'
+            mavenAuthenticateFeed: false
+            effectivePomSkip: false
+            sonarQubeRunAnalysis: false
+            allowBrokenSymlinks: 
+        # - task: SonarCloudAnalyze@1
+
+        # - task: SonarCloudPublish@1
+        #   inputs:
+        # #       pollingTimeoutSec: '300'
+        - task: ServiceNow-DevOps-Build-Sonar-Registration@1
+          inputs:
+              connectedServiceName: 'dsingh12-DevOps_Practice-ServiceNow DevOps Service Connection'
+              sonarProjectKey: 'balu-sn-devops_First_repo'
+              sonarInstanceUrl: 'http://sonarqube1.sndevops.xyz/'       
+
+            
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: 'target'
+            ArtifactName: 'Build Artifact'
+            publishLocation: 'container'
+
+  - stage: Deploy
+    jobs:
+      - job: 'd1'
+        pool: server
+        steps:       
+           - task: ServiceNow-DevOps-Server-Change-Acceleration@1
+             inputs:
+               connectedServiceName: 'dsingh12-DevOps_Practice-ServiceNow DevOps Service Connection'
+               UpstreamJob: 't1'
